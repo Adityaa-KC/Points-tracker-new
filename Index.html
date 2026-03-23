@@ -1,320 +1,536 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Flag the Code — Bug Hunt Event</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#0a0e14;color:#e0e6f0;font-family:'Space Grotesk',sans-serif;min-height:100vh;}
-  .scanline{position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,128,0.012) 2px,rgba(0,255,128,0.012) 4px);pointer-events:none;z-index:0;}
-  .app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 1rem 3rem;}
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --accent2: #ff3366;
+    --accent3: #7c3aed;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+    --bronze: #cd7f32;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
 
-  /* HEADER */
-  header{padding:1.75rem 0 1.25rem;border-bottom:1px solid #1e2d1e;margin-bottom:1.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-  .logo{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:#00ff88;letter-spacing:-0.5px;}
-  .logo span{color:#ff4d6d;}
-  .header-right{display:flex;align-items:center;gap:10px;}
-  .user-chip{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.2);color:#00ff88;padding:5px 12px;border-radius:20px;display:none;align-items:center;gap:8px;}
-  .user-chip.visible{display:flex;}
-  .logout-btn{background:transparent;border:none;color:#2a5a2a;font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;padding:2px 4px;transition:color 0.2s;}
-  .logout-btn:hover{color:#ff4d6d;}
-  .event-badge{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:4px 12px;border-radius:20px;letter-spacing:1px;}
-  .blink{animation:blink 1.2s step-start infinite;}
-  @keyframes blink{50%{opacity:0;}}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* SCREENS */
-  .screen{display:none;}
-  .screen.active{display:block;animation:fadeIn 0.3s ease;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-  /* LOGIN / REGISTER */
-  .auth-wrap{max-width:420px;margin:2rem auto;}
-  .auth-toggle{display:flex;gap:4px;margin-bottom:1.5rem;background:#0d1117;border-radius:10px;padding:4px;border:1px solid #1e2d1e;}
-  .auth-tab{flex:1;padding:9px;border:none;background:transparent;color:#4a6a4a;font-family:'JetBrains Mono',monospace;font-size:12px;border-radius:7px;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
-  .auth-tab.active{background:#0f1e0f;color:#00ff88;border:1px solid rgba(0,255,136,0.25);}
+  /* Grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-  .terminal-box{background:#0d1117;border:1px solid #1e2d1e;border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;}
-  .terminal-header{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid #1a2a1a;}
-  .dot{width:10px;height:10px;border-radius:50%;}
-  .dot-r{background:#ff5f57;}.dot-y{background:#ffbd2e;}.dot-g{background:#28ca41;}
-  .terminal-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:#4a6a4a;margin-left:auto;}
-  .form-group{margin-bottom:1.1rem;}
-  label{display:block;font-size:12px;color:#4a8a6a;font-family:'JetBrains Mono',monospace;margin-bottom:7px;letter-spacing:0.5px;}
-  input[type="text"],input[type="password"]{width:100%;background:#070c07;border:1px solid #1e3a1e;color:#e0f0e0;font-family:'JetBrains Mono',monospace;font-size:14px;padding:11px 14px;border-radius:8px;outline:none;transition:border-color 0.2s;}
-  input[type="text"]:focus,input[type="password"]:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,0.08);}
-  input::placeholder{color:#2a4a2a;}
-  .flag-input{letter-spacing:1px;text-transform:uppercase;}
-  .primary-btn{width:100%;padding:12px;background:linear-gradient(135deg,#00cc6a,#00ff88);border:none;border-radius:8px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#030a03;letter-spacing:1px;transition:all 0.2s;margin-top:0.25rem;}
-  .primary-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,255,136,0.25);}
-  .primary-btn:active{transform:translateY(0);}
-  .toast{padding:11px 14px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:0.9rem;display:none;align-items:center;gap:8px;}
-  .toast.success{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);color:#00ff88;display:flex;}
-  .toast.error{background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);color:#ff4d6d;display:flex;}
-  .toast.info{background:rgba(0,150,255,0.08);border:1px solid rgba(0,150,255,0.3);color:#4db8ff;display:flex;}
+  .noise {
+    position: fixed;
+    inset: 0;
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
 
-  /* TABS (student view — no leaderboard) */
-  .tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:#0d1117;border-radius:10px;padding:4px;border:1px solid #1e2d1e;}
-  .tab{flex:1;padding:10px;border:none;background:transparent;color:#4a6a4a;font-family:'JetBrains Mono',monospace;font-size:12px;border-radius:7px;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
-  .tab.active{background:#0f1e0f;color:#00ff88;border:1px solid rgba(0,255,136,0.25);}
-  .tab:hover:not(.active){color:#8aaa8a;}
-  .panel{display:none;}
-  .panel.active{display:block;animation:fadeIn 0.25s ease;}
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
 
-  /* SUBMIT */
-  .score-banner{background:#070c07;border:1px solid rgba(0,255,136,0.15);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;}
-  .score-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:#2a5a2a;}
-  .score-val{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;color:#00ff88;}
-  .score-flags{font-family:'JetBrains Mono',monospace;font-size:11px;color:#2a5a2a;text-align:right;}
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
 
-  /* HISTORY */
-  .history-box{background:#0d1117;border:1px solid #1e2d1e;border-radius:12px;padding:1.25rem;}
-  .history-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid #1a2a1a;}
-  .history-title{font-size:12px;color:#4a6a4a;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;}
-  .history-list{display:flex;flex-direction:column;gap:6px;}
-  .history-empty{text-align:center;padding:1.5rem;color:#2a4a2a;font-family:'JetBrains Mono',monospace;font-size:12px;border:1px dashed #1a2a1a;border-radius:8px;}
-  .history-item{display:flex;align-items:center;gap:10px;background:#070c07;border:1px solid #1a2a1a;border-radius:6px;padding:10px 12px;animation:slideIn 0.3s ease;}
-  @keyframes slideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
-  .hist-flag{font-family:'JetBrains Mono',monospace;font-size:12px;color:#4a8a6a;flex:1;}
-  .hist-pts{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#00ff88;}
-  .hist-time{font-size:11px;color:#2a4a2a;font-family:'JetBrains Mono',monospace;}
+  .nav-logo span { color: var(--accent2); }
 
-  /* ADMIN - LEADERBOARD */
-  .lb-header{display:grid;grid-template-columns:48px 1fr auto auto;gap:12px;padding:6px 16px;margin-bottom:6px;font-size:11px;color:#2a4a2a;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;}
-  .lb-row{display:grid;grid-template-columns:48px 1fr auto auto;gap:12px;align-items:center;background:#0d1117;border:1px solid #1a2a1a;border-radius:10px;padding:14px 16px;margin-bottom:6px;transition:border-color 0.2s,transform 0.15s;}
-  .lb-row:hover{border-color:#1e3a1e;transform:translateX(2px);}
-  .lb-row.top1{background:linear-gradient(135deg,#0f1e0f,#0a1a0a);border-color:rgba(0,255,136,0.35);}
-  .lb-row.top2{border-color:rgba(200,200,255,0.2);}
-  .lb-row.top3{border-color:rgba(200,150,80,0.2);}
-  .rank{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;text-align:center;}
-  .rank-1{color:#00ff88;}.rank-2{color:#c8c8ff;}.rank-3{color:#e8a040;}.rank-n{color:#2a4a2a;}
-  .lb-name{font-size:14px;font-weight:500;color:#c0d8c0;}
-  .lb-flags{font-family:'JetBrains Mono',monospace;font-size:12px;color:#2a5a2a;text-align:center;}
-  .lb-score{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#00ff88;text-align:right;}
-  .lb-empty{text-align:center;padding:3rem;color:#2a4a2a;font-family:'JetBrains Mono',monospace;font-size:13px;}
-  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem;}
-  .stat-card{background:#070c07;border:1px solid #1a2a1a;border-radius:8px;padding:14px;text-align:center;}
-  .stat-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#00ff88;}
-  .stat-lbl{font-size:11px;color:#2a5a2a;margin-top:4px;font-family:'JetBrains Mono',monospace;}
-  .section-label{font-size:12px;color:#4a6a4a;font-family:'JetBrains Mono',monospace;margin-bottom:10px;letter-spacing:0.5px;}
-  .flag-grid{display:flex;flex-direction:column;gap:6px;margin-bottom:1.5rem;}
-  .flag-entry{display:grid;grid-template-columns:1fr 80px 44px;gap:8px;align-items:center;background:#070c07;border:1px solid #1a2a1a;border-radius:8px;padding:10px 12px;}
-  .flag-entry .fe-code{font-family:'JetBrains Mono',monospace;font-size:12px;color:#4a8a6a;}
-  .flag-entry .fe-pts{font-family:'JetBrains Mono',monospace;font-size:13px;color:#00ff88;font-weight:700;}
-  .del-btn{background:transparent;border:1px solid rgba(255,77,109,0.25);color:#ff4d6d;border-radius:5px;cursor:pointer;font-size:14px;height:30px;transition:background 0.2s;}
-  .del-btn:hover{background:rgba(255,77,109,0.08);}
-  .add-flag-form{display:grid;grid-template-columns:1fr 90px auto;gap:8px;align-items:end;margin-bottom:1.5rem;}
-  .add-btn{padding:12px 16px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88;font-family:'JetBrains Mono',monospace;font-size:13px;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
-  .add-btn:hover{background:rgba(0,255,136,0.15);}
-  .danger-btn{padding:10px 20px;background:transparent;border:1px solid rgba(255,77,109,0.3);color:#ff4d6d;font-family:'JetBrains Mono',monospace;font-size:12px;border-radius:7px;cursor:pointer;transition:all 0.2s;}
-  .danger-btn:hover{background:rgba(255,77,109,0.08);}
-  .admin-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);color:#ff4d6d;padding:3px 8px;border-radius:10px;}
-  .sync-dot{width:8px;height:8px;border-radius:50%;background:#2a4a2a;display:inline-block;margin-right:5px;transition:background 0.3s;}
-  .sync-dot.live{background:#00ff88;animation:pulse 2s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+  .nav-links { display: flex; gap: 1rem; }
 
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: none;
+    font: inherit;
+  }
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
 
+  /* SECTIONS */
+  section { position: relative; z-index: 1; }
 
+  /* HERO */
+  #hero {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .hero-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.3rem 0.8rem;
+    border-radius: 100px;
+    margin-bottom: 2rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(0,255,136,0); }
+  }
+
+  .hero-title {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(3rem, 8vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -3px;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-title .line1 { color: var(--text); display: block; }
+  .hero-title .line2 {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--accent);
+    display: block;
+  }
+
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--muted);
+    max-width: 500px;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+  }
+
+  .hero-sub span { color: var(--accent); }
+
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 1rem;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* SUBMIT SECTION */
+  #submit {
+    padding: 4rem 2rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 0.8rem;
+  }
+
+  .section-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-sub {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    line-height: 1.7;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+  }
+
+  .form-group { margin-bottom: 1.5rem; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.6rem;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,255,136,0.1);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 1rem;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn:hover { background: #00cc6a; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,255,136,0.3); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-secondary:hover { background: rgba(0,255,136,0.08); }
+
+  /* Alert */
+  .alert {
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    margin-top: 1rem;
+    display: none;
+  }
+  .alert.success { background: rgba(0,255,136,0.1); border: 1px solid var(--accent); color: var(--accent); }
+  .alert.error { background: rgba(255,51,102,0.1); border: 1px solid var(--accent2); color: var(--accent2); }
+  .alert.show { display: block; animation: fadeIn 0.3s; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+
+  /* LEADERBOARD */
+  #leaderboard {
+    padding: 4rem 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .lb-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+  .lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+  }
+
+  .lb-table thead th {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lb-row {
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    transition: background 0.2s;
+    animation: rowFadeIn 0.4s ease both;
+  }
+
+  @keyframes rowFadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .lb-row:hover { background: rgba(255,255,255,0.02); }
+
+  .lb-row td {
+    padding: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .rank-cell {
+    font-size: 1rem;
+    font-weight: 700;
+    width: 60px;
+    text-align: center;
+  }
+
+  .rank-1 { color: var(--gold); }
+  .rank-2 { color: var(--silver); }
+  .rank-3 { color: var(--bronze); }
+  .rank-other { color: var(--muted); }
+
+  .name-cell { font-size: 0.95rem; color: var(--text); font-weight: 600; }
+
+  .bugs-cell { color: var(--muted); font-size: 0.8rem; }
+
+  .pts-cell {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: right;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+  /* TOP 3 podium cards */
+  .podium {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .podium-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+    flex: 1;
+    max-width: 200px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .podium-card:hover { transform: translateY(-3px); }
+  .podium-card.p1 { border-color: var(--gold); background: rgba(255,215,0,0.05); order: 2; }
+  .podium-card.p2 { border-color: var(--silver); background: rgba(192,192,192,0.03); order: 1; }
+  .podium-card.p3 { border-color: var(--bronze); background: rgba(205,127,50,0.03); order: 3; }
+
+  .podium-medal { font-size: 2rem; margin-bottom: 0.3rem; }
+  .podium-name { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.2rem; word-break: break-word; }
+  .podium-pts { font-family: var(--mono); font-size: 1.2rem; font-weight: 700; }
+  .podium-pts.p1 { color: var(--gold); }
+  .podium-pts.p2 { color: var(--silver); }
+  .podium-pts.p3 { color: var(--bronze); }
+  .podium-bugs { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+
+  /* FOOTER */
+  footer {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  footer span { color: var(--accent); }
+
+  /* LOADING */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,255,136,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .tab-btn {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* Register card */
+  #register-card, #login-card { display: none; }
+  #register-card.show, #login-card.show { display: block; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .podium { flex-direction: column; align-items: center; }
+    .podium-card { max-width: 100%; width: 100%; order: unset !important; }
+    .hero-stats { gap: 1.5rem; }
+    nav { padding: 0 1rem; }
+    .nav-links a { padding: 0.3rem 0.5rem; font-size: 0.7rem; }
+  }
 </style>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
 </head>
 <body>
-<div class="scanline"></div>
-<div class="app">
-  <header>
-    <div class="logo">FLAG<span>{</span>the_code<span>}</span></div>
-    <div class="header-right">
-      <div class="user-chip" id="userChip">
-        <span id="userChipName"></span>
-        <span id="userChipBadge"></span>
-        <button class="logout-btn" onclick="logout()">sign out</button>
-      </div>
-      <div class="event-badge"><span class="sync-dot live"></span><span id="syncLabel">LIVE</span></div>
-    </div>
-  </header>
+<div class="noise"></div>
 
-  <!-- ═══════════════ AUTH SCREEN ═══════════════ -->
-  <div class="screen active" id="screen-auth">
-    <div class="auth-wrap">
-      <div style="text-align:center;margin-bottom:1.5rem;">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#4a6a4a;margin-bottom:6px;">// welcome to</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:#00ff88;font-weight:700;">Flag the Code — 2025</div>
-      </div>
-      <div class="auth-toggle">
-        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
-        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
-        <button class="auth-tab" id="tab-admin" onclick="switchAuthTab('admin')">Admin</button>
-      </div>
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, push, query, orderByChild, limitToLast }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-      <!-- LOGIN -->
-      <div id="form-login">
-        <div class="terminal-box">
-          <div class="terminal-header">
-            <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-            <span class="terminal-title">login.sh</span>
-          </div>
-          <div class="form-group">
-    <label>// EMAIL</label>
-    <input type="email" id="login-email" placeholder="your@email.com" autocomplete="off"/>
-
-          </div>
-          <div class="form-group">
-            <label>// PASSWORD</label>
-            <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
-          </div>
-          <button class="primary-btn" onclick="doLogin()">→ LOGIN</button>
-          <div class="toast" id="login-toast"></div>
-        </div>
-      </div>
-
-      <!-- REGISTER -->
-      <div id="form-register" style="display:none;">
-        <div class="terminal-box">
-          <div class="terminal-header">
-            <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-            <span class="terminal-title">register.sh</span>
-          </div>
-          <div class="form-group">
-            <label>// DISPLAY NAME</label>
-            <input type="text" id="reg-name" placeholder="your_name" autocomplete="off"/>
-          </div>
-          <div class="form-group">
-          <label>// EMAIL</label>
-          <input type="email" id="reg-email" placeholder="choose@email.com" autocomplete="off"/>
-
-          </div>
-          <div class="form-group">
-            <label>// PASSWORD</label>
-            <input type="password" id="reg-pass" placeholder="choose_a_password" onkeydown="if(event.key==='Enter')doRegister()"/>
-          </div>
-          <button class="primary-btn" onclick="doRegister()">→ CREATE ACCOUNT</button>
-          <div class="toast" id="reg-toast"></div>
-        </div>
-      </div>
-
-      <!-- ADMIN LOGIN -->
-      <div id="form-admin" style="display:none;">
-        <div class="terminal-box">
-          <div class="terminal-header">
-            <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-            <span class="terminal-title">admin_access.sh</span>
-          </div>
-          <div class="form-group">
-          <label>// PASSWORD (admin@points-tracker.com)</label>
-          <input type="password" id="admin-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/>
-
-          </div>
-          <button class="primary-btn" onclick="doAdminLogin()">→ ADMIN LOGIN</button>
-          <div class="toast" id="admin-toast"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════ STUDENT SCREEN ═══════════════ -->
-  <div class="screen" id="screen-student">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('submit','student')">Submit Flag</button>
-      <button class="tab" onclick="switchTab('history','student')">My Submissions</button>
-    </div>
-
-    <!-- SUBMIT -->
-    <div class="panel active" id="student-submit">
-      <div class="score-banner">
-        <div>
-          <div class="score-label">// YOUR SCORE</div>
-          <div class="score-val" id="student-score">0</div>
-        </div>
-        <div class="score-flags" id="student-flagcount">0 flags captured</div>
-      </div>
-      <div class="terminal-box">
-        <div class="terminal-header">
-          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <span class="terminal-title">flag_submission.sh</span>
-        </div>
-        <div class="form-group" style="margin-bottom:0.5rem;">
-          <label>// FLAG CODE</label>
-          <input type="text" id="flagInput" class="flag-input" placeholder="FLAG{...}" autocomplete="off"/>
-        </div>
-        <button class="primary-btn" onclick="submitFlag()">→ SUBMIT FLAG</button>
-        <div class="toast" id="submit-toast"></div>
-      </div>
-    </div>
-
-    <!-- HISTORY -->
-    <div class="panel" id="student-history">
-      <div class="history-box">
-        <div class="history-top">
-          <div class="history-title">// MY SUBMITTED FLAGS</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#00ff88;" id="hist-total"></div>
-        </div>
-        <div class="history-list" id="historyList">
-          <div class="history-empty" id="historyEmpty">// No flags submitted yet — start hunting!</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════ ADMIN SCREEN ═══════════════ -->
-  <div class="screen" id="screen-admin">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('leaderboard','admin')">Leaderboard</button>
-      <button class="tab" onclick="switchTab('flags','admin')">Manage Flags</button>
-      <button class="tab" onclick="switchTab('danger','admin')">Danger Zone</button>
-    </div>
-
-    <!-- LEADERBOARD -->
-    <div class="panel active" id="admin-leaderboard">
-      <div class="terminal-box" style="padding:1rem 1.25rem;margin-bottom:1rem;">
-        <div class="stats-row">
-          <div class="stat-card"><div class="stat-val" id="statPlayers">0</div><div class="stat-lbl">PLAYERS</div></div>
-          <div class="stat-card"><div class="stat-val" id="statFlagsFound">0</div><div class="stat-lbl">FLAGS FOUND</div></div>
-          <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">TOTAL FLAGS</div></div>
-        </div>
-      </div>
-      <div class="lb-header">
-        <div style="text-align:center">RANK</div><div>PLAYER</div>
-        <div style="text-align:center">FLAGS</div><div style="text-align:right">SCORE</div>
-      </div>
-      <div id="leaderboard"></div>
-    </div>
-
-    <!-- FLAGS -->
-    <div class="panel" id="admin-flags">
-      <div class="terminal-box">
-        <div class="section-label">// ADD NEW FLAG</div>
-        <div class="add-flag-form">
-          <div><label>Flag Code</label><input type="text" id="newFlag" class="flag-input" placeholder="FLAG{code_here}"/></div>
-          <div><label>Points</label><input type="text" id="newPoints" placeholder="100"/></div>
-          <button class="add-btn" onclick="addFlag()">+ ADD</button>
-        </div>
-        <div class="section-label">// ACTIVE FLAGS</div>
-        <div class="flag-grid" id="flagGrid"></div>
-      </div>
-    </div>
-
-    <!-- DANGER -->
-    <div class="panel" id="admin-danger">
-      <div class="terminal-box">
-        <div class="section-label">// DANGER ZONE</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="danger-btn" onclick="clearLeaderboard()">CLEAR LEADERBOARD</button>
-          <button class="danger-btn" onclick="clearAllData()">RESET ALL DATA</button>
-        </div>
-      </div>
-      <div class="terminal-box" style="margin-top:0;">
-        <div class="section-label">// REGISTERED USERS</div>
-        <div id="userList" style="display:flex;flex-direction:column;gap:6px;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-const firebaseConfig = {
+  // ===== 🔧 CONFIGURE YOUR FIREBASE HERE =====
+  const firebaseConfig = {
   apiKey: "AIzaSyDctNHWnkY8G4g7K_-zIrtsrp4AmRkjx3w",
   authDomain: "points-tracker-2f024.firebaseapp.com",
   databaseURL: "https://points-tracker-2f024-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -324,379 +540,378 @@ const firebaseConfig = {
   appId: "1:683402475231:web:0ab91357d452322e0a9b6a",
   measurementId: "G-NPBS9D4MPZ"
 };
+  // ============================================
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const database = firebase.database();
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
 
-const ADMIN_EMAIL = "admin@points-tracker.com";
-const ADMIN_PASSWORD = "adminpass123"; // Change this to your preferred admin password and create user in Firebase Console if needed
+  // ===== BUG CODES CONFIG =====
+  // Format: { CODE: { points, description } }
+  const BUG_CODES = {
+    "BUG001": { points: 10, description: "SQL Injection vulnerability" },
+    "BUG002": { points: 20, description: "XSS vulnerability" },
+    "BUG003": { points: 15, description: "Broken authentication" },
+    "BUG004": { points: 25, description: "Insecure direct object reference" },
+    "BUG005": { points: 30, description: "Remote code execution" },
+    "BUG006": { points: 10, description: "Sensitive data exposure" },
+    "BUG007": { points: 20, description: "Missing access control" },
+    "BUG008": { points: 15, description: "Security misconfiguration" },
+  };
+  // ============================
 
-const db = {
-  flags: {
-    "FLAG{FIRST_BUG}": 100,
-    "FLAG{NULL_POINTER}": 150,
-    "FLAG{SQL_INJECT}": 200,
-    "FLAG{XSS_VULN}": 175,
-    "FLAG{RACE_COND}": 250,
-  },
-  users: {},
-  players: {},
-  submissions: []
-};
+  let currentUser = null;
+  let liveListener = null;
 
-let session = null;
-let authUnsub = null;
-let leaderboardUnsub = null;
+  // DOM refs
+  const totalParticipantsEl = document.getElementById('total-participants');
+  const totalCodesEl = document.getElementById('total-codes');
+  const leaderboardBody = document.getElementById('leaderboard-body');
+  const podiumEl = document.getElementById('podium');
 
-/* ── AUTH HELPERS ── */
-function switchAuthTab(t) {
-  ['login','register','admin'].forEach(x => {
-    document.getElementById('tab-'+x).classList.toggle('active', x===t);
-    document.getElementById('form-'+x).style.display = x===t ? 'block' : 'none';
-  });
-}
-
-function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass = document.getElementById('reg-pass').value;
-  if (!name||!email||!pass||pass.length < 6) { toast('reg-toast','Name, valid email & password (6+ chars) required','error'); return; }
-  auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
-    return userCredential.user.updateProfile({ displayName: name });
-  }).then(() => {
-    toast('reg-toast','Account created! You can now login.','success');
-    switchAuthTab('login');
-  }).catch((error) => {
-    toast('reg-toast',error.message,'error');
-  });
-}
-
-function doLogin() {
-  const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  if (!email||!pass) { toast('login-toast','Enter email and password','error'); return; }
-  auth.signInWithEmailAndPassword(email, pass).then(() => {
-    // Session set in onAuthStateChanged
-  }).catch((error) => {
-    toast('login-toast',error.message,'error');
-  });
-}
-
-function doAdminLogin() {
-  const pass = document.getElementById('admin-pass').value;
-  auth.signInWithEmailAndPassword(ADMIN_EMAIL, pass).then(() => {
-    // Session set in onAuthStateChanged
-  }).catch((error) => {
-    toast('admin-toast',error.message,'error');
-  });
-}
-
-function logout() {
-  auth.signOut().then(() => {
-    // Session cleared in onAuthStateChanged
-  }).catch((error) => {
-    console.error('Logout error:', error);
-  });
-}
-
-/* ── SCREEN TRANSITIONS ── */
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-}
-
-function enterStudentScreen() {
-  showScreen('student');
-  updateUserChip();
-  refreshStudentUI();
-}
-
-function enterAdminScreen() {
-  showScreen('admin');
-  updateUserChip();
-  renderLeaderboard();
-  renderFlagGrid();
-  renderUserList();
-}
-
-function initAuth() {
-  if (authUnsub) authUnsub();
-  authUnsub = auth.onAuthStateChanged((user) => {
+  // AUTH STATE
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    updateAuthUI(user);
     if (user) {
-      const isAdmin = user.email === ADMIN_EMAIL;
-      session = {
-        uid: user.uid,
-        email: user.email,
-        name: user.displayName || user.email.split('@')[0],
-        role: isAdmin ? 'admin' : 'student'
-      };
-      if (isAdmin) {
-        enterAdminScreen();
-      } else {
-        enterStudentScreen();
-      }
+      document.getElementById('user-name-display').textContent = user.displayName || user.email.split('@')[0];
+    }
+  });
+
+  function updateAuthUI(user) {
+    const authSection = document.getElementById('auth-section');
+    const submitSection = document.getElementById('submit-section');
+    const userBar = document.getElementById('user-bar');
+    if (user) {
+      authSection.style.display = 'none';
+      submitSection.style.display = 'block';
+      userBar.style.display = 'flex';
     } else {
-      session = null;
-      showScreen('auth');
-      document.getElementById('userChip').classList.remove('visible');
-      ['login-email','login-pass','reg-name','reg-email','reg-pass','admin-pass'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
+      authSection.style.display = 'block';
+      submitSection.style.display = 'none';
+      userBar.style.display = 'none';
+    }
+  }
+
+  // REGISTER
+  window.register = async () => {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const btn = document.getElementById('reg-btn');
+    const alert = document.getElementById('reg-alert');
+
+    if (!name || !email || !password) { showAlert(alert, 'error', 'All fields required.'); return; }
+    if (password.length < 6) { showAlert(alert, 'error', 'Password must be 6+ characters.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Creating account...';
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // Init user in DB
+      await set(ref(db, `participants/${cred.user.uid}`), {
+        name, email, points: 0, bugsFound: [], joinedAt: Date.now()
       });
-      switchAuthTab('login');
+      showAlert(alert, 'success', `Welcome, ${name}! You're registered.`);
+    } catch (e) {
+      showAlert(alert, 'error', e.message.replace('Firebase: ', ''));
     }
-  });
-}
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  };
 
-function updateUserChip() {
-  const chip = document.getElementById('userChip');
-  document.getElementById('userChipName').textContent = session.name || '';
-  const badge = document.getElementById('userChipBadge');
-  if (session.role === 'admin') {
-    badge.innerHTML = '<span class="admin-badge">ADMIN</span>';
-  } else { badge.innerHTML = ''; }
-  chip.classList.toggle('visible', !!session);
-}
+  // LOGIN
+  window.login = async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const alert = document.getElementById('login-alert');
 
-/* ── TABS ── */
-function switchTab(tab, prefix) {
-  const allTabs = document.querySelectorAll(`#screen-${prefix} .tab`);
-  const allPanels = document.querySelectorAll(`#screen-${prefix} .panel`);
-  allTabs.forEach(t => t.classList.remove('active'));
-  allPanels.forEach(p => p.classList.remove('active'));
-  const idx = [...allTabs].findIndex(t => t.getAttribute('onclick').includes(tab));
-  if (idx >= 0) allTabs[idx].classList.add('active');
-  const panel = document.getElementById(prefix+'-'+tab);
-  if (panel) panel.classList.add('active');
-  if (tab === 'history') renderHistory();
-  if (tab === 'leaderboard') renderLeaderboard();
-  else if (leaderboardUnsub) {
-    leaderboardUnsub();
-    leaderboardUnsub = null;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Logging in...';
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      showAlert(alert, 'error', 'Invalid credentials. Try again.');
+      btn.disabled = false;
+      btn.textContent = 'Log In';
+    }
+  };
+
+  // LOGOUT
+  window.logout = async () => {
+    await signOut(auth);
+  };
+
+  // SUBMIT CODE
+  window.submitCode = async () => {
+    if (!currentUser) return;
+    const code = document.getElementById('bug-code').value.trim().toUpperCase();
+    const alert = document.getElementById('submit-alert');
+    const btn = document.getElementById('submit-btn');
+
+    if (!code) { showAlert(alert, 'error', 'Enter a bug code.'); return; }
+
+    const bugInfo = BUG_CODES[code];
+    if (!bugInfo) { showAlert(alert, 'error', `❌ Invalid code: ${code}`); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verifying...';
+
+    const userRef = ref(db, `participants/${currentUser.uid}`);
+    try {
+      const snap = await get(userRef);
+      const userData = snap.val();
+
+      if (userData.bugsFound && userData.bugsFound.includes(code)) {
+        showAlert(alert, 'error', `⚠️ You already submitted ${code}!`);
+      } else {
+        const newPoints = (userData.points || 0) + bugInfo.points;
+        const newBugs = [...(userData.bugsFound || []), code];
+        await set(userRef, { ...userData, points: newPoints, bugsFound: newBugs, lastUpdated: Date.now() });
+        document.getElementById('bug-code').value = '';
+        showAlert(alert, 'success', `✅ +${bugInfo.points} pts! "${bugInfo.description}" found!`);
+        updateMyStats(newPoints, newBugs.length);
+      }
+    } catch (e) {
+      showAlert(alert, 'error', 'Error submitting. Try again.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Submit Code';
+  };
+
+  function updateMyStats(pts, bugs) {
+    document.getElementById('my-points').textContent = pts;
+    document.getElementById('my-bugs').textContent = bugs;
   }
-  if (tab === 'flags') renderFlagGrid();
-  if (tab === 'danger') renderUserList();
-}
 
-/* ── SUBMIT FLAG ── */
-function submitFlag() {
-  if (!session || !session.uid) return;
-  const flag = document.getElementById('flagInput').value.trim().toUpperCase();
-  if (!flag) { toast('submit-toast','Enter a flag code','error'); return; }
-  if (!db.flags[flag]) { toast('submit-toast','Invalid flag — keep hunting!','error'); return; }
+  // LIVE LEADERBOARD
+  function startLeaderboard() {
+    const participantsRef = ref(db, 'participants');
+    liveListener = onValue(participantsRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const sorted = Object.values(data).sort((a, b) => b.points - a.points);
 
-  const key = session.uid;
-  if (!db.players[key]) db.players[key] = { name: session.name, score:0, flags:[], flagged:{}, flagCount:0 };
+      // Update stats
+      totalParticipantsEl.textContent = sorted.length;
+      const totalBugs = sorted.reduce((sum, p) => sum + (p.bugsFound?.length || 0), 0);
+      totalCodesEl.textContent = totalBugs;
 
-  const player = db.players[key];
-  const safeFlag = flag.replace(/[{}]/g,'_');
+      renderPodium(sorted.slice(0, 3));
+      renderTable(sorted);
 
-  if (player.flagged[safeFlag]) { toast('submit-toast','Already submitted this flag!','info'); return; }
-
-  const pts = db.flags[flag];
-  player.score += pts;
-  player.flags.push(flag);
-  player.flagged[safeFlag] = true;
-  player.flagCount = player.flags.length;
-
-  // Sync to Firebase
-  database.ref(`/players/${key}`).set({
-    name: player.name,
-    score: player.score,
-    flagCount: player.flagCount
-  }).catch(err => console.error('Sync error:', err));
-
-  db.submissions.push({ player: session.name, flag, pts, time: Date.now() });
-
-  toast('submit-toast', `+${pts} pts — Flag captured!`, 'success');
-  document.getElementById('flagInput').value = '';
-  refreshStudentUI();
-}
-
-function refreshStudentUI() {
-  if (!session || !session.uid) return;
-  const key = session.uid;
-  if (!db.players[key]) return;
-  const p = db.players[key];
-  document.getElementById('student-score').textContent = p.score;
-  document.getElementById('student-flagcount').textContent = p.flagCount + ' flag' + (p.flagCount !== 1 ? 's' : '') + ' captured';
-}
-
-function renderHistory() {
-  if (!session || !session.uid) return;
-  const key = session.uid;
-  const p = db.players[key];
-  const list = document.getElementById('historyList');
-  const empty = document.getElementById('historyEmpty');
-  const total = document.getElementById('hist-total');
-  list.querySelectorAll('.history-item').forEach(e => e.remove());
-
-  if (!p || p.flags.length === 0) {
-    empty.style.display = 'block';
-    total.textContent = '';
-    return;
-  }
-  empty.style.display = 'none';
-  total.textContent = p.score + ' pts total';
-
-  [...p.flags].reverse().forEach(f => {
-    const sub = db.submissions.find(s => s.flag === f && s.player === session.name);
-    const item = document.createElement('div');
-    item.className = 'history-item';
-    item.innerHTML = `<span class="hist-flag">${f}</span><span class="hist-pts">+${db.flags[f]||'?'}</span><span class="hist-time">${sub ? new Date(sub.time).toLocaleTimeString() : ''}</span>`;
-    list.appendChild(item);
-  });
-}
-
-/* ── LEADERBOARD ── */
-function renderLeaderboard() {
-  if (leaderboardUnsub) {
-    leaderboardUnsub();
-    leaderboardUnsub = null;
-  }
-  const lb = document.getElementById('leaderboard');
-  const playerRef = database.ref('/players');
-  leaderboardUnsub = playerRef.onValue((snapshot) => {
-    const players = [];
-    snapshot.forEach((childSnapshot) => {
-      const p = childSnapshot.val();
-      players.push(p);
+      // Update my stats if logged in
+      if (currentUser) {
+        const me = data[currentUser.uid];
+        if (me) updateMyStats(me.points || 0, me.bugsFound?.length || 0);
+      }
     });
-    players.sort((a,b) => b.score - a.score);
-    const activePlayers = players.filter(p => p.flagCount > 0);
-    const flagsFound = new Set(db.submissions.map(s => s.flag)).size;
-    document.getElementById('statPlayers').textContent = players.length;
-    document.getElementById('statFlagsFound').textContent = flagsFound;
-    document.getElementById('statTotal').textContent = Object.keys(db.flags).length;
+  }
 
-    if (activePlayers.length === 0) {
-      lb.innerHTML = '<div class="lb-empty">// No submissions yet</div>';
+  function renderPodium(top3) {
+    if (top3.length === 0) { podiumEl.innerHTML = ''; return; }
+    const medals = ['🥇', '🥈', '🥉'];
+    const classes = ['p1', 'p2', 'p3'];
+    podiumEl.innerHTML = top3.map((p, i) => `
+      <div class="podium-card ${classes[i]}">
+        <div class="podium-medal">${medals[i]}</div>
+        <div class="podium-name">${escHtml(p.name)}</div>
+        <div class="podium-pts ${classes[i]}">${p.points} pts</div>
+        <div class="podium-bugs">${p.bugsFound?.length || 0} bugs</div>
+      </div>
+    `).join('');
+  }
+
+  function renderTable(sorted) {
+    if (sorted.length === 0) {
+      leaderboardBody.innerHTML = `
+        <tr><td colspan="4">
+          <div class="empty-state">
+            <div class="icon">🐛</div>
+            <div>No participants yet. Be the first!</div>
+          </div>
+        </td></tr>`;
       return;
     }
-    lb.innerHTML = '';
-    activePlayers.forEach((p,i) => {
-      const rank = i+1;
-      const rc = ['rank-1','rank-2','rank-3'][i]||'rank-n';
-      const rowc = ['top1','top2','top3'][i]||'';
-      const div = document.createElement('div');
-      div.className = `lb-row ${rowc}`;
-      div.style.animationDelay = (i*0.04)+'s';
-      div.innerHTML = `<div class="rank ${rc}">#${rank}</div><div class="lb-name">${p.name}${rank===1?' ♛':''}</div><div class="lb-flags">${p.flagCount}</div><div class="lb-score">${p.score}</div>`;
-      lb.appendChild(div);
-    });
-  });
-}
 
-/* ── FLAG MANAGEMENT ── */
-function renderFlagGrid() {
-  const grid = document.getElementById('flagGrid');
-  grid.innerHTML = '';
-  Object.entries(db.flags).forEach(([code,pts]) => {
-    const div = document.createElement('div');
-    div.className = 'flag-entry';
-    div.innerHTML = `<span class="fe-code">${code}</span><span class="fe-pts">${pts} pts</span><button class="del-btn" onclick="deleteFlag('${code}')">✕</button>`;
-    grid.appendChild(div);
-  });
-}
+    leaderboardBody.innerHTML = sorted.map((p, i) => {
+      const rank = i + 1;
+      const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+      return `
+        <tr class="lb-row" style="animation-delay:${i * 0.05}s">
+          <td class="rank-cell ${rankClass}">${medal}</td>
+          <td class="name-cell">${escHtml(p.name)}</td>
+          <td class="bugs-cell">${p.bugsFound?.length || 0} bugs</td>
+          <td class="pts-cell">${p.points || 0}</td>
+        </tr>`;
+    }).join('');
+  }
 
-function addFlag() {
-  const code = document.getElementById('newFlag').value.trim().toUpperCase();
-  const pts = parseInt(document.getElementById('newPoints').value.trim());
-  if (!code||isNaN(pts)||pts<=0) { alert('Enter a valid flag and points.'); return; }
-  db.flags[code] = pts;
-  document.getElementById('newFlag').value = '';
-  document.getElementById('newPoints').value = '';
-  renderFlagGrid();
-}
+  function showAlert(el, type, msg) {
+    el.className = `alert ${type} show`;
+    el.textContent = msg;
+    setTimeout(() => el.classList.remove('show'), 5000);
+  }
 
-function deleteFlag(code) {
-  if (!confirm('Delete '+code+'?')) return;
-  delete db.flags[code];
-  renderFlagGrid();
-}
+  function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 
-/* ── USER LIST (admin) ── */
-function renderUserList() {
-  const ul = document.getElementById('userList');
-  ul.innerHTML = '<div class="history-empty">Loading users...</div>';
-  database.ref('/players').once('value').then((snapshot) => {
-    ul.innerHTML = '';
-    const users = [];
-    snapshot.forEach((child) => {
-      users.push({uid: child.key, ...child.val()});
-    });
-    if (users.length === 0) {
-      ul.innerHTML = '<div class="history-empty">// No players yet</div>'; 
-      return;
-    }
-    users.forEach(u => {
-      const div = document.createElement('div');
-      div.className = 'history-item';
-      div.innerHTML = `<span class="hist-flag" style="color:#c0d8c0">${u.name}</span><span class="hist-time">@${u.uid.slice(0,8)}...</span><span class="hist-pts">${u.score} pts</span><button class="del-btn" onclick="deleteUser('${u.uid}')">✕</button>`;
-      ul.appendChild(div);
-    });
-  }).catch(err => {
-    ul.innerHTML = '<div class="history-empty">// Error loading users</div>';
-  });
-}
+  // TAB switching
+  window.showTab = (tab) => {
+    document.getElementById('register-card').classList.toggle('show', tab === 'register');
+    document.getElementById('login-card').classList.toggle('show', tab === 'login');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  };
 
-function deleteUser(uid) {
-  if (!confirm('Remove player ' + uid + '?')) return;
-  database.ref(`/players/${uid}`).remove().then(() => {
-    toast('admin-toast','Player removed','success');
-    renderUserList();
-    renderLeaderboard();
-  }).catch(err => {
-    console.error('Delete error:', err);
-    toast('admin-toast','Error deleting player','error');
-  });
-}
-
-/* ── DANGER ── */
-function clearLeaderboard() {
-  if (!confirm('Clear all scores and submissions?')) return;
-  database.ref('/players').once('value').then((snapshot) => {
-    const updates = {};
-    snapshot.forEach((child) => {
-      const uid = child.key;
-      const name = child.val().name;
-      updates[`players/${uid}`] = {name, score:0, flagCount:0};
-    });
-    return database.ref().update(updates);
-  }).then(() => {
-    db.submissions = [];
-    toast('admin-toast','Leaderboard cleared!','success');
-    renderLeaderboard();
-    renderUserList();
-  }).catch((error) => {
-    console.error('Clear error:', error);
-    toast('admin-toast','Error clearing leaderboard','error');
-  });
-}
-
-function clearAllData() {
-  if (!confirm('RESET ALL DATA? This removes players but keeps flags.')) return;
-  database.ref('/players').remove().then(() => {
-    db.players = {}; db.submissions = [];
-    toast('admin-toast','All data reset!','success');
-    renderLeaderboard(); renderUserList();
-  }).catch(err => {
-    console.error('Reset error:', err);
-    toast('admin-toast','Error resetting data','error');
-  });
-}
-
-/* ── TOAST ── */
-initAuth();
-
-function toast(id, msg, type) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.className = 'toast ' +type;
-  el.innerHTML = (type==='success'?'✓ ':type==='error'?'✗ ':'ℹ ')+msg;
-  setTimeout(()=>{el.style.display='none';el.className='toast';},3200);
-}
+  // Init
+  startLeaderboard();
+  showTab('register');
 </script>
+
+<nav>
+  <div class="nav-logo">&lt;<span>Flag</span>TheCode /&gt;</div>
+  <div class="nav-links">
+    <a onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})" class="active">Submit</a>
+    <a onclick="document.getElementById('leaderboard').scrollIntoView({behavior:'smooth'})">Leaderboard</a>
+    <a href="admin.html">Admin</a>
+  </div>
+</nav>
+
+<!-- USER BAR -->
+<div id="user-bar" style="display:none; background:rgba(0,255,136,0.05); border-bottom:1px solid var(--border); padding:0.5rem 2rem; font-family:var(--mono); font-size:0.8rem; color:var(--muted); display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; position:relative; z-index:99;">
+  <span>👋 Logged in as <strong style="color:var(--accent)" id="user-name-display"></strong> &nbsp;|&nbsp; Points: <strong style="color:var(--accent)" id="my-points">0</strong> &nbsp;|&nbsp; Bugs: <strong style="color:var(--accent)" id="my-bugs">0</strong></span>
+  <button onclick="logout()" style="font-family:var(--mono);font-size:0.7rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.3rem 0.8rem;border-radius:4px;cursor:pointer;">Sign Out</button>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge">🚩 Event Live Now</div>
+  <h1 class="hero-title">
+    <span class="line1">Flag the</span>
+    <span class="line2">Code</span>
+  </h1>
+  <p class="hero-sub">
+    Find bugs on the challenge site. Submit the <span>secret code</span> here. Climb the leaderboard. Win.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-val" id="total-participants">0</div>
+      <div class="stat-label">Hunters</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="total-codes">0</div>
+      <div class="stat-label">Bugs Found</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">8</div>
+      <div class="stat-label">Total Bugs</div>
+    </div>
+  </div>
+</section>
+
+<!-- SUBMIT SECTION -->
+<section id="submit" style="padding:2rem 2rem 4rem; max-width:640px; margin:0 auto; position:relative; z-index:1;">
+
+  <!-- AUTH -->
+  <div id="auth-section">
+    <div class="section-tag">// Step 1</div>
+    <h2 class="section-title">Join the Hunt</h2>
+    <p class="section-sub">Create an account or log in to start submitting bug codes.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="register" onclick="showTab('register')">Register</button>
+      <button class="tab-btn" data-tab="login" onclick="showTab('login')">Log In</button>
+    </div>
+
+    <!-- Register -->
+    <div id="register-card" class="card">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="reg-name" placeholder="e.g. Alice Sharma" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="text" id="reg-email" placeholder="you@college.edu" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 6 characters" />
+      </div>
+      <button class="btn" id="reg-btn" onclick="register()">Create Account</button>
+      <div class="alert" id="reg-alert"></div>
+    </div>
+
+    <!-- Login -->
+    <div id="login-card" class="card">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="text" id="login-email" placeholder="you@college.edu" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Your password" />
+      </div>
+      <button class="btn" id="login-btn" onclick="login()">Log In</button>
+      <div class="alert" id="login-alert"></div>
+    </div>
+  </div>
+
+  <!-- SUBMIT CODE (shown after auth) -->
+  <div id="submit-section" style="display:none;">
+    <div class="section-tag">// Submit Bug Code</div>
+    <h2 class="section-title">Found a Bug?</h2>
+    <p class="section-sub">Enter the secret code revealed when you spot a bug on the challenge site.</p>
+    <div class="card">
+      <div class="form-group">
+        <label>Bug Code</label>
+        <input type="text" id="bug-code" placeholder="e.g. BUG001" style="text-transform:uppercase;letter-spacing:2px;font-size:1.2rem;" />
+      </div>
+      <button class="btn" id="submit-btn" onclick="submitCode()">Submit Code</button>
+      <div class="alert" id="submit-alert"></div>
+    </div>
+  </div>
+</section>
+
+<!-- LEADERBOARD -->
+<section id="leaderboard" style="padding:4rem 2rem; max-width:860px; margin:0 auto; position:relative; z-index:1;">
+  <div class="lb-header">
+    <div>
+      <div class="section-tag">// Rankings</div>
+      <h2 class="section-title">Leaderboard</h2>
+    </div>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Live Updates
+    </div>
+  </div>
+
+  <!-- Top 3 Podium -->
+  <div class="podium" id="podium"></div>
+
+  <!-- Full table -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th style="text-align:center">Rank</th>
+          <th>Participant</th>
+          <th>Bugs Found</th>
+          <th style="text-align:right">Points</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <tr><td colspan="4"><div class="empty-state"><div class="icon">⏳</div><div>Loading leaderboard...</div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Built for <span>Flag the Code</span> — Bug Hunt Event &nbsp;|&nbsp; Real-time powered by Firebase
+</footer>
 </body>
 </html>
