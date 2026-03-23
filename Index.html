@@ -653,7 +653,7 @@
   // SUBMIT CODE
   window.submitCode = async () => {
     if (!currentUser) return;
-    const code = document.getElementById('bug-code').value.trim().toUpperCase();
+    const code = document.getElementById('bug-code').value.trim();
     const alert = document.getElementById('submit-alert');
     const btn = document.getElementById('submit-btn');
 
